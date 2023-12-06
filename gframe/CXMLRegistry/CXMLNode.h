@@ -59,7 +59,7 @@ public :
 	irr::core::array<const wchar_t *> *listNonNodeChildren();
 	irr::core::array<const wchar_t *> *listNodeChildren();
 	CXMLNode *getThis();
-	CXMLNode *findChildByName(const wchar_t *name) const;	
+	CXMLNode *findChildByName(const wchar_t *name);	
 	CXMLNode *getParent();
 	void setParent(CXMLNode *newparent);
 private :

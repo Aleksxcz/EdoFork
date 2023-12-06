@@ -9,52 +9,55 @@
 #ifdef _IRR_COMPILE_WITH_GUI_
 
 #include <IGUICheckBox.h>
+#ifndef _IRR_OVERRIDE_
+#define _IRR_OVERRIDE_
+#endif
 
 namespace irr {
 namespace gui {
 
-class CGUICustomCheckBox final : public IGUICheckBox {
+class CGUICustomCheckBox : public IGUICheckBox {
 public:
 
 	//! constructor
 	CGUICustomCheckBox(bool checked, IGUIEnvironment* environment, IGUIElement* parent, s32 id, core::rect<s32> rectangle);
 
-	static IGUICheckBox* addCustomCheckBox(bool checked, IGUIEnvironment* environment, core::rect<s32> rectangle, IGUIElement* parent = 0, s32 id = -1, const wchar_t* text = nullptr);
+	static IGUICheckBox* addCustomCheckBox(bool checked, IGUIEnvironment* environment, core::rect<s32> rectangle, IGUIElement* parent = 0, s32 id = -1, const wchar_t* text = 0);
 
 	//! set if box is checked
-	void setChecked(bool checked) override;
+	virtual void setChecked(bool checked) _IRR_OVERRIDE_;
 
 	//! returns if box is checked
-	bool isChecked() const override;
+	virtual bool isChecked() const _IRR_OVERRIDE_;
 
 #if IRRLICHT_VERSION_MAJOR==1 && IRRLICHT_VERSION_MINOR==9
 
 	//! Sets whether to draw the background
-	void setDrawBackground(bool draw) override;
+	virtual void setDrawBackground(bool draw) _IRR_OVERRIDE_;
 
 	//! Checks if background drawing is enabled
 	/** \return true if background drawing is enabled, false otherwise */
-	bool isDrawBackgroundEnabled() const override;
+	virtual bool isDrawBackgroundEnabled() const _IRR_OVERRIDE_;
 
 	//! Sets whether to draw the border
-	void setDrawBorder(bool draw) override;
+	virtual void setDrawBorder(bool draw) _IRR_OVERRIDE_;
 
 	//! Checks if border drawing is enabled
 	/** \return true if border drawing is enabled, false otherwise */
-	bool isDrawBorderEnabled() const override;
+	virtual bool isDrawBorderEnabled() const _IRR_OVERRIDE_;
 #endif
 
 	//! called if an event happened.
-	bool OnEvent(const SEvent& event) override;
+	virtual bool OnEvent(const SEvent& event) _IRR_OVERRIDE_;
 
 	//! draws the element and its children
-	void draw() override;
+	virtual void draw() _IRR_OVERRIDE_;
 
 	//! Writes attributes of the element.
-	void serializeAttributes(io::IAttributes* out, io::SAttributeReadWriteOptions* options) const override;
+	virtual void serializeAttributes(io::IAttributes* out, io::SAttributeReadWriteOptions* options) const _IRR_OVERRIDE_;
 
 	//! Reads attributes of the element
-	void deserializeAttributes(io::IAttributes* in, io::SAttributeReadWriteOptions* options) override;
+	virtual void deserializeAttributes(io::IAttributes* in, io::SAttributeReadWriteOptions* options) _IRR_OVERRIDE_;
 
 	void setColor(video::SColor color);
 

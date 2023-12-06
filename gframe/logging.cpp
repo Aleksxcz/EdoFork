@@ -6,11 +6,11 @@
 namespace ygo {
 
 void ErrorLog(epro::stringview msg) {
-	FileStream log{ EPRO_TEXT("error.log"), FileStream::out | FileStream::app };
-	if (!log.good())
+	FileStream log("error.log", FileStream::out | FileStream::app);
+	if (!log.is_open())
 		return;
 	auto now = std::time(nullptr);
-	log << epro::format("[{:%Y-%m-%d %H:%M:%S}] {}", fmt::localtime(now), msg) << std::endl;
+	log << epro::format("[{:%Y-%m-%d %H:%M:%S}] {}", *std::localtime(&now), msg) << std::endl;
 }
 
 }

@@ -24,10 +24,6 @@ local ygopro_config=function(static_core)
 		filter {}
 	end
 
-	filter { "action:not vs*" }
-		enablewarnings "pedantic"
-	filter {}
-
 	filter {'files:**.rc', 'action:not vs*'}
 		buildmessage '%{file.relpath}'
 		buildoutputs { '%{cfg.objdir}/%{file.basename}_rc.o' }
@@ -35,13 +31,6 @@ local ygopro_config=function(static_core)
 			'windres -DMINGW "%{file.relpath}" -o "%{cfg.objdir}/%{file.basename}_rc.o"'
 		}
 	filter {}
-
-	if static_core then
-		if _OPTIONS["lua-path"] then
-			includedirs{ _OPTIONS["lua-path"] .. "/include" }
-			libdirs{ _OPTIONS["lua-path"] .. "/lib" }
-		end
-	end
 
 	defines "CURL_STATICLIB"
 	if _OPTIONS["pics"] then
@@ -58,11 +47,6 @@ local ygopro_config=function(static_core)
 	end
 	if _OPTIONS["update-url"] then
 		defines { "UPDATE_URL=" .. _OPTIONS["update-url"] }
-	end
-	if _OPTIONS["bundled-font"] then
-		defines "YGOPRO_USE_BUNDLED_FONT"
-	else
-		excludes { "CGUITTFont/bundled_font.cpp" }
 	end
 	includedirs "../ocgcore"
 	links { "clzma", "Irrlicht" }
@@ -111,9 +95,7 @@ local ygopro_config=function(static_core)
 					links { "mpg123" }
 				end
 			filter "system:macosx or ios"
-				links { "CoreAudio.framework", "AudioToolbox.framework" }
-			filter "system:macosx"
-				links { "AudioUnit.framework" }
+				links { "CoreAudio.framework", "AudioToolbox.framework", "AudioUnit.framework" }
 			filter { "system:windows", "action:not vs*" }
 				links { "FLAC", "vorbisfile", "vorbis", "ogg", "OpenAL32" }
 				if _OPTIONS["use-mpg123"] then
@@ -138,6 +120,7 @@ local ygopro_config=function(static_core)
 		defines "IRR_COMPILE_WITH_DX9_DEV_PACK"
 
 	filter "system:not windows"
+		defines "LUA_COMPAT_5_2"
 		if _OPTIONS["discord"] then
 			links "discord-rpc"
 		end
@@ -150,6 +133,7 @@ local ygopro_config=function(static_core)
 		links { "sqlite3", "event", "git2", "ssh2" }
 
 	filter "system:macosx or ios"
+		defines "LUA_USE_MACOSX"
 		links { "ssl", "crypto" }
 		if os.istarget("macosx") then
 			files { "*.m", "*.mm" }
@@ -188,8 +172,9 @@ local ygopro_config=function(static_core)
 		links { "fmt", "curl", "freetype" }
 
 	filter "system:linux"
+		defines "LUA_USE_LINUX"
 		if static_core then
-			links  "lua"
+			links  "lua:static"
 		end
 		if _OPTIONS["vcpkg-root"] then
 			links { "ssl", "crypto", "z", "jpeg" }
@@ -199,7 +184,7 @@ local ygopro_config=function(static_core)
 		if _OPTIONS["vcpkg-root"] then
 			for _,arch in ipairs(archs) do
 				local full_vcpkg_root_path=get_vcpkg_root_path(arch)
-				local platform="platforms:" .. arch
+				local platform="platforms:" .. ((arch == "armv7" and "arm") or arch)
 				filter { "system:not windows", platform }
 					_includedirs { full_vcpkg_root_path .. "/include/irrlicht" }
 			end
@@ -215,14 +200,14 @@ local ygopro_config=function(static_core)
 			links "lua-c++"
 		end
 		if _OPTIONS["vcpkg-root"] then
-			links { "ssl", "crypto", "zlib", "jpeg" }
+			links { "ssl", "crypto", "z", "jpeg" }
 		end
 
 	filter "system:not windows"
 		links { "pthread" }
 
 	filter "system:windows"
-		links { "wbemuuid", "opengl32", "ws2_32", "winmm", "gdi32", "kernel32", "user32", "imm32", "wldap32", "crypt32", "advapi32", "rpcrt4", "ole32", "OleAut32", "uuid", "winhttp" }
+		links { "wbemuuid", "opengl32", "ws2_32", "winmm", "gdi32", "kernel32", "user32", "imm32", "wldap32", "crypt32", "advapi32", "rpcrt4", "ole32", "uuid", "winhttp" }
 		if not _OPTIONS["oldwindows"] then
 			links "Iphlpapi"
 		end
@@ -233,7 +218,7 @@ if _OPTIONS["sound"]=="sfml" then
 	include "../sfAudio"
 end
 
-if not _OPTIONS["no-core"] then
+if _OPTIONS["no-core"]~="true" then
 	project "ygopro"
 		targetname "ygopro"
 		if _OPTIONS["prebuilt-core"] then

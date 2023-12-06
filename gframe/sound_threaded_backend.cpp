@@ -10,7 +10,9 @@ void SoundThreadedBackend::BaseLoop() {
 	ygo::Utils::SetThreadName("SoundsThread");
 	while(true) {
 		std::unique_lock<epro::mutex> lck(m_ActionMutex);
-		m_ActionCondVar.wait(lck, [this] { return !m_Actions.empty(); });
+		while(m_Actions.empty()) {
+			m_ActionCondVar.wait(lck);
+		}
 		auto action = std::move(m_Actions.front());
 		m_Actions.pop();
 		lck.unlock();
@@ -24,20 +26,16 @@ void SoundThreadedBackend::BaseLoop() {
 			break;
 		}
 		case ActionType::PLAY_MUSIC: {
-			auto& argument = action.arg.play_music;
-			auto& response = *argument.response;
-			response.answer = m_BaseBackend->PlayMusic(*argument.name, argument.loop);
+			auto res = m_BaseBackend->PlayMusic(*action.arg.play_music.name, action.arg.play_music.loop);
 			std::lock_guard<epro::mutex> lckres(m_ResponseMutex);
-			response.answered = true;
+			response = res;
 			m_ResponseCondVar.notify_all();
 			break;
 		}
 		case ActionType::PLAY_SOUND: {
-			auto& argument = action.arg.play_sound;
-			auto& response = *argument.response;
-			response.answer = m_BaseBackend->PlaySound(*argument.name);
+			auto res = m_BaseBackend->PlaySound(*action.arg.play_sound);
 			std::lock_guard<epro::mutex> lckres(m_ResponseMutex);
-			response.answered = true;
+			response = res;
 			m_ResponseCondVar.notify_all();
 			break;
 		}
@@ -54,11 +52,9 @@ void SoundThreadedBackend::BaseLoop() {
 			break;
 		}
 		case ActionType::MUSIC_PLAYING: {
-			auto& argument = action.arg.is_playing;
-			auto& response = *argument.response;
-			response.answer = m_BaseBackend->MusicPlaying();
+			auto res = m_BaseBackend->MusicPlaying();
 			std::lock_guard<epro::mutex> lckres(m_ResponseMutex);
-			response.answered = true;
+			response = res;
 			m_ResponseCondVar.notify_all();
 			break;
 		}
@@ -76,7 +72,7 @@ void SoundThreadedBackend::BaseLoop() {
 SoundThreadedBackend::~SoundThreadedBackend() {
 	std::queue<Action> tmp;
 	Action action{ ActionType::TERMINATE };
-	tmp.push(action);
+	tmp.emplace(std::move(action));
 	{
 		std::lock_guard<epro::mutex> lck(m_ActionMutex);
 		m_Actions.swap(tmp);
@@ -90,7 +86,7 @@ void SoundThreadedBackend::SetSoundVolume(double volume) {
 	Action action{ ActionType::SET_SOUND_VOLUME };
 	action.arg.volume = volume;
 	std::lock_guard<epro::mutex> lck(m_ActionMutex);
-	m_Actions.push(action);
+	m_Actions.emplace(std::move(action));
 	m_ActionCondVar.notify_all();
 }
 
@@ -98,49 +94,47 @@ void SoundThreadedBackend::SetMusicVolume(double volume) {
 	Action action{ ActionType::SET_MUSIC_VOLUME };
 	action.arg.volume = volume;
 	std::lock_guard<epro::mutex> lck(m_ActionMutex);
-	m_Actions.push(action);
+	m_Actions.emplace(std::move(action));
 	m_ActionCondVar.notify_all();
 }
 
 bool SoundThreadedBackend::PlayMusic(const std::string& name, bool loop) {
-	Response res{};
 	Action action{ ActionType::PLAY_MUSIC };
 	auto& args = action.arg.play_music;
-	args.response = &res;
 	args.name = &name;
 	args.loop = loop;
 	std::unique_lock<epro::mutex> lck(m_ActionMutex);
 	std::unique_lock<epro::mutex> lckres(m_ResponseMutex);
-	m_Actions.push(action);
+	m_Actions.emplace(std::move(action));
 	m_ActionCondVar.notify_all();
 	lck.unlock();
-	return WaitForResponse(lckres, res);
+	m_ResponseCondVar.wait(lckres);
+	return response;
 }
 
 bool SoundThreadedBackend::PlaySound(const std::string& name) {
-	Response res{};
 	Action action{ ActionType::PLAY_SOUND };
-	action.arg.play_sound.name = &name;
-	action.arg.play_sound.response = &res;
+	action.arg.play_sound = &name;
 	std::unique_lock<epro::mutex> lck(m_ActionMutex);
 	std::unique_lock<epro::mutex> lckres(m_ResponseMutex);
-	m_Actions.push(action);
+	m_Actions.emplace(std::move(action));
 	m_ActionCondVar.notify_all();
 	lck.unlock();
-	return WaitForResponse(lckres, res);
+	m_ResponseCondVar.wait(lckres);
+	return response;
 }
 
 void SoundThreadedBackend::StopSounds() {
 	Action action{ ActionType::STOP_SOUNDS };
 	std::lock_guard<epro::mutex> lck(m_ActionMutex);
-	m_Actions.push(action);
+	m_Actions.emplace(std::move(action));
 	m_ActionCondVar.notify_all();
 }
 
 void SoundThreadedBackend::StopMusic() {
 	Action action{ ActionType::STOP_MUSIC };
 	std::lock_guard<epro::mutex> lck(m_ActionMutex);
-	m_Actions.push(action);
+	m_Actions.emplace(std::move(action));
 	m_ActionCondVar.notify_all();
 }
 
@@ -148,25 +142,24 @@ void SoundThreadedBackend::PauseMusic(bool pause) {
 	Action action{ ActionType::PAUSE_MUSIC };
 	action.arg.pause = pause;
 	std::lock_guard<epro::mutex> lck(m_ActionMutex);
-	m_Actions.push(action);
+	m_Actions.emplace(std::move(action));
 	m_ActionCondVar.notify_all();
 }
 
 bool SoundThreadedBackend::MusicPlaying() {
-	Response res{};
 	Action action{ ActionType::MUSIC_PLAYING };
-	action.arg.is_playing.response = &res;
 	std::unique_lock<epro::mutex> lck(m_ActionMutex);
 	std::unique_lock<epro::mutex> lckres(m_ResponseMutex);
-	m_Actions.push(action);
+	m_Actions.emplace(std::move(action));
 	m_ActionCondVar.notify_all();
 	lck.unlock();
-	return WaitForResponse(lckres, res);
+	m_ResponseCondVar.wait(lckres);
+	return response;
 }
 
 void SoundThreadedBackend::Tick() {
 	Action action{ ActionType::TICK };
 	std::lock_guard<epro::mutex> lck(m_ActionMutex);
-	m_Actions.push(action);
+	m_Actions.emplace(std::move(action));
 	m_ActionCondVar.notify_all();
 }

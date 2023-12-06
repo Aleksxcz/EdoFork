@@ -1,22 +1,22 @@
 #include "client_updater.h"
-#if defined(UPDATE_URL) && !EDOPRO_IOS
-#include "config.h"
-#if EDOPRO_WINDOWS
+#ifdef UPDATE_URL
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
-#elif EDOPRO_LINUX || EDOPRO_APPLE
+#else
 #include <sys/file.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <sys/wait.h>
-#endif //EDOPRO_WINDOWS
+#endif // _WIN32
 #include "file_stream.h"
 #include <curl/curl.h>
 #include <nlohmann/json.hpp>
-#include <atomic>
-#include "MD5/md5.h"
-#include "logging.h"
 #include "epro_thread.h"
+#include <atomic>
+#include <openssl/md5.h>
+#include "logging.h"
+#include "config.h"
 #include "utils.h"
 #include "porting.h"
 #include "game_config.h"
@@ -43,8 +43,6 @@ struct Payload {
 };
 
 static int progress_callback(void* ptr, curl_off_t TotalToDownload, curl_off_t NowDownloaded, curl_off_t TotalToUpload, curl_off_t NowUploaded) {
-	(void)TotalToUpload;
-	(void)NowUploaded;
 	Payload* payload = static_cast<Payload*>(ptr);
 	if(payload && payload->callback) {
 		int percentage = 0;
@@ -96,7 +94,7 @@ static CURLcode curlPerform(const char* url, void* payload, void* payload2 = nul
 	if(ygo::gGameConfig->ssl_certificate_path.size()
 	   && ygo::Utils::FileExists(ygo::Utils::ToPathString(ygo::gGameConfig->ssl_certificate_path)))
 		curl_easy_setopt(curl_handle, CURLOPT_CAINFO, ygo::gGameConfig->ssl_certificate_path.data());
-#if EDOPRO_WINDOWS
+#ifdef _WIN32
 	else
 		curl_easy_setopt(curl_handle, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NATIVE_CA);
 #endif
@@ -123,7 +121,7 @@ static bool CheckMd5(std::istream& instream, const md5array& md5) {
 namespace ygo {
 
 void ClientUpdater::StartUnzipper(unzip_callback callback, void* payload) {
-#if EDOPRO_ANDROID
+#ifdef __ANDROID__
 	porting::installUpdate(epro::format("{}" UPDATES_FOLDER ".apk", Utils::GetWorkingDirectory(), update_urls.front().name));
 #else
 	if(Lock.acquired())
@@ -144,13 +142,13 @@ bool ClientUpdater::StartUpdate(update_callback callback, void* payload) {
 }
 void ClientUpdater::Unzip(void* payload, unzip_callback callback) {
 	Utils::SetThreadName("Unzip");
-#if EDOPRO_WINDOWS || EDOPRO_LINUX
+#if defined(_WIN32) || (defined(__linux__) && !defined(__ANDROID__))
 	const auto& path = ygo::Utils::GetExePath();
 	ygo::Utils::FileMove(path, epro::format(EPRO_TEXT("{}.old"), path));
-#endif
-#if EDOPRO_WINDOWS
+#if !defined(__linux__)
 	const auto& corepath = ygo::Utils::GetCorePath();
 	ygo::Utils::FileMove(corepath, epro::format(EPRO_TEXT("{}.old"), corepath));
+#endif
 #endif
 	unzip_payload cbpayload{};
 	UnzipperPayload uzpl;
@@ -168,7 +166,7 @@ void ClientUpdater::Unzip(void* payload, unzip_callback callback) {
 	Utils::Reboot();
 }
 
-#if EDOPRO_ANDROID
+#ifdef __ANDROID__
 #define formatstr (UPDATES_FOLDER EPRO_TEXT(".apk"))
 #else
 #define formatstr UPDATES_FOLDER
@@ -181,10 +179,10 @@ void ClientUpdater::DownloadUpdate(void* payload, update_callback callback) {
 	cbpayload.callback = callback;
 	cbpayload.total = static_cast<int>(update_urls.size());
 	cbpayload.payload = payload;
-	int cur_file = 1;
+	int i = 1;
 	for(auto& file : update_urls) {
 		auto name = epro::format(formatstr, ygo::Utils::ToPathString(file.name));
-		cbpayload.current = cur_file++;
+		cbpayload.current = i++;
 		cbpayload.filename = file.name.data();
 		cbpayload.is_new = true;
 		cbpayload.previous_percent = -1;
@@ -262,11 +260,11 @@ void ClientUpdater::CheckUpdate() {
 }
 
 static inline void DeleteOld() {
-#if EDOPRO_WINDOWS || EDOPRO_LINUX
+#if defined(_WIN32) || (defined(__linux__) && !defined(__ANDROID__))
 	ygo::Utils::FileDelete(epro::format(EPRO_TEXT("{}.old"), ygo::Utils::GetExePath()));
-#endif
-#if EDOPRO_WINDOWS
+#if !defined(__linux__)
 	ygo::Utils::FileDelete(epro::format(EPRO_TEXT("{}.old"), ygo::Utils::GetCorePath()));
+#endif
 #endif
 	(void)0;
 }
@@ -277,9 +275,9 @@ ClientUpdater::ClientUpdater(epro::path_stringview override_url) {
 	if(Lock.acquired())
 		DeleteOld();
 }
-#if EDOPRO_WINDOWS || EDOPRO_LINUX || EDOPRO_MACOS
+#ifndef __ANDROID__
 ClientUpdater::FileLock::FileLock() {
-#if EDOPRO_WINDOWS
+#ifdef _WIN32
 	m_lock = CreateFile(LOCKFILE, GENERIC_READ,
 					  0, nullptr, CREATE_ALWAYS,
 					  FILE_ATTRIBUTE_HIDDEN, nullptr);
@@ -297,7 +295,7 @@ ClientUpdater::FileLock::FileLock() {
 ClientUpdater::FileLock::~FileLock() {
 	if(m_lock == null_lock)
 		return;
-#if EDOPRO_WINDOWS
+#ifdef _WIN32
 	CloseHandle(m_lock);
 #else
 	flock(m_lock, LOCK_UN);
@@ -307,6 +305,6 @@ ClientUpdater::FileLock::~FileLock() {
 }
 #endif
 
-}
+};
 
 #endif //UPDATE_URL

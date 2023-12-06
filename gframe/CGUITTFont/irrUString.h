@@ -57,7 +57,7 @@ constexpr uchar32_t UTF_REPLACEMENT_CHARACTER = 0xFFFD;
 //! \param high The high value of the pair.
 //! \param low The low value of the pair.
 //! \return The UTF-32 character expressed by the surrogate pair.
-inline uchar32_t toUTF32(uchar16_t high, uchar16_t low) {
+inline constexpr uchar32_t toUTF32(uchar16_t high, uchar16_t low) {
 	// Convert the surrogate pair into a single UTF-32 character.
 	uchar32_t x = ((high & ((1 << 6) - 1)) << 10) | (low & ((1 << 10) - 1));
 	uchar32_t wu = ((high >> 6) & ((1 << 5) - 1)) + 1;
@@ -69,7 +69,6 @@ inline uchar32_t toUTF32(uchar16_t high, uchar16_t low) {
 
 //! UTF-16 string class.
 class ustring16 {
-public:
 	//! UTF-16 surrogate start values.
 	static constexpr uint16_t UTF16_HI_SURROGATE = 0xD800;
 	static constexpr uint16_t UTF16_LO_SURROGATE = 0xDC00;
@@ -84,26 +83,34 @@ public:
 	static constexpr bool UTF16_IS_SURROGATE_LO(uchar16_t c) {
 		return (c & 0xFC00) == UTF16_LO_SURROGATE;
 	}
-	static constexpr bool UTF16_IS_VALID_SURROGATE_PAIR(uchar16_t lo, uchar16_t hi) {
-		return UTF16_IS_SURROGATE_HI(hi) && UTF16_IS_SURROGATE_LO(lo);
-	}
+public:
 
 	typedef uchar32_t access;
 
 
 	//! Iterator to iterate through a UTF-16 string.
+#ifndef USTRING_NO_STL
+	class _ustring16_const_iterator : public std::iterator <
+		std::bidirectional_iterator_tag,	// iterator_category
+		access,								// value_type
+		ptrdiff_t,							// difference_type
+		const access,						// pointer
+		const access						// reference
+	>
+#else
 	class _ustring16_const_iterator
+#endif
 	{
 	public:
 		typedef _ustring16_const_iterator _Iter;
+		typedef std::iterator<std::bidirectional_iterator_tag, access, ptrdiff_t, const access, const access> _Base;
 		typedef const access const_pointer;
 		typedef const access const_reference;
-		typedef ptrdiff_t distance_type;
-		// stuff for std::iterator_traits
-		typedef std::bidirectional_iterator_tag iterator_category;
-		typedef access value_type;
-		typedef distance_type difference_type;
-		typedef const access pointer;
+
+		typedef typename _Base::value_type value_type;
+		typedef typename _Base::difference_type difference_type;
+		typedef typename _Base::difference_type distance_type;
+		typedef typename _Base::pointer pointer;
 		typedef const_reference reference;
 
 		//! Constructors.
@@ -227,7 +234,7 @@ public:
 				return difference_type();
 
 			_Iter i = iter;
-			difference_type ret = 0;
+			difference_type ret;
 
 			// Walk up.
 			if(pos > i.pos) {
@@ -343,14 +350,14 @@ public:
 		}
 
 		void go_back(const difference_type v) {
-			// Go to the appropriate position.
-			// TODO: Don't force u32 on an x64 OS.  Make it agnostic.
-			auto i = static_cast<u32>(v);
 			if(is_utf32) {
-				if(pos < i)
+				if(pos < (u32)v)
 					pos = 0;
-				pos -= i;
+				pos -= v;
 			} else {
+				// Go to the appropriate position.
+				// TODO: Don't force u32 on an x64 OS.  Make it agnostic.
+				u32 i = (u32)v;
 				const uchar16_t* a = reinterpret_cast<const uchar16_t*>(ref->data());
 				while(i != 0 && pos != 0) {
 					--pos;
@@ -384,7 +391,7 @@ public:
 	template <class T>
 	ustring16(const T& other)
 		: data_(nullptr), size_(0), size_raw_(0) {
-		assign(other.data(), static_cast<u32>(other.size()));
+		assign(other.data(), other.size());
 	}
 
 
@@ -412,7 +419,7 @@ public:
 
 	template <class T>
 	ustring16& operator=(const T& other) {
-		assign(other.data(), static_cast<u32>(other.size()));
+		assign(other.data(), other.size());
 		return *this;
 	}
 
@@ -435,10 +442,6 @@ public:
 	}
 
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4127) //conditional expression is constant
-#endif
 	//! Returns the length of a ustring16 in full characters.
 	//! \return Length of a ustring16 in full characters.
 	u32 size() const {
@@ -459,9 +462,6 @@ public:
 		}
 		return size_;
 	}
-#ifdef _MSC_VER
-#pragma warning(pop) //conditional expression is constant
-#endif
 
 
 	//! Informs if the ustring is empty or not.
@@ -515,10 +515,6 @@ public:
 	}
 
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4127) //conditional expression is constant
-#endif
 	//! Validate the existing ustring16, checking for valid surrogate pairs and checking for proper termination.
 	//! \return A reference to our current string.
 	void validate() {
@@ -528,9 +524,6 @@ public:
 			return;
 		}
 	}
-#ifdef _MSC_VER
-#pragma warning(pop) //conditional expression is constant
-#endif
 
 
 	//! Returns the raw number of UTF-16 code points in the string which includes the individual surrogates.
@@ -574,8 +567,8 @@ private:
 	//--- member variables
 
 	const wchar_t* data_;
-	mutable u32 size_;
-	u32 size_raw_;
+	size_t size_raw_;
+	mutable size_t size_;
 };
 
 typedef ustring16 ustring;

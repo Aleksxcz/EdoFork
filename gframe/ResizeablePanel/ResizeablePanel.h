@@ -9,14 +9,14 @@
 namespace irr {
 namespace gui {
 class IGUIScrollBar;
-class Panel final : public IGUIElement {
+class Panel : public IGUIElement {
 public:
 	Panel(IGUIEnvironment* env, const core::rect<s32>& rectangle, s32 id = -1, IGUIElement * parent = nullptr, bool vertical = true, bool horizontal = true);
 	static Panel* addPanel(IGUIEnvironment* environment, IGUIElement* parent, s32 id, const core::rect<s32>& rectangle, bool vertical = true, bool horizontal = true);
 	IGUIElement* getSubpanel();
 	//virtual void draw();
-	bool OnEvent(const SEvent& event) override;
-	void updateAbsolutePosition() override;
+	virtual bool OnEvent(const SEvent& event);
+	virtual void updateAbsolutePosition();
 private:
 	bool hasVerticalScrolling;
 	bool hasHorizontalScrolling;

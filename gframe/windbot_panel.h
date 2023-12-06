@@ -3,8 +3,7 @@
 
 #include <vector>
 #include "windbot.h"
-#include "config.h"
-#if EDOPRO_LINUX || EDOPRO_MACOS
+#if !defined(_WIN32) && !defined(__ANDROID__)
 #include <sys/types.h>
 #endif
 
@@ -23,7 +22,7 @@ namespace ygo {
 struct WindBotPanel {
 	static std::wstring absolute_deck_path;
 	std::vector<WindBot> bots;
-#if EDOPRO_LINUX || EDOPRO_MACOS
+#if !defined(_WIN32) && !defined(__ANDROID__)
 	std::vector<pid_t> windbotsPids;
 #endif
 
@@ -37,7 +36,6 @@ struct WindBotPanel {
 	irr::gui::IGUIStaticText* stBotEngine;
 	irr::gui::IGUIStaticText* deckProperties;
 	irr::gui::IGUIButton* btnAdd;
-	irr::gui::IGUIButton* btnCommand;
 
 	int CurrentIndex();
 	int CurrentEngine();
@@ -45,7 +43,6 @@ struct WindBotPanel {
 	void UpdateDescription();
 	void UpdateEngine();
 	bool LaunchSelected(int port, epro::wstringview pass);
-	std::wstring GetParameters(int port, epro::wstringview pass);
 private:
 	int genericEngineIdx;
 };

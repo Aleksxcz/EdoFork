@@ -59,7 +59,7 @@ static size_t write_data(char *ptr, size_t size, size_t nmemb, void *userdata) {
 		memcpy(&data->header[data->header_written], ptr, increase);
 		data->header_written += increase;
 		if(data->header_written == header_size && ImageHeaderType(data->header) == UNK_FILE)
-			return 0xffffffff;
+			return -1;
 	}
 	FILE* out = data->stream;
 	fwrite(ptr, 1, nbytes, out);
@@ -92,7 +92,7 @@ void ImageDownloader::DownloadPic() {
 	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
 	if(gGameConfig->ssl_certificate_path.size() && Utils::FileExists(Utils::ToPathString(gGameConfig->ssl_certificate_path)))
 		curl_easy_setopt(curl, CURLOPT_CAINFO, gGameConfig->ssl_certificate_path.data());
-#if EDOPRO_WINDOWS
+#ifdef _WIN32
 	else
 		curl_easy_setopt(curl, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NATIVE_CA);
 #endif

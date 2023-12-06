@@ -20,7 +20,7 @@ namespace gui {
 class IGUIFont;
 class IGUIScrollBar;
 
-class CGUICustomTable final : public IGUITable {
+class CGUICustomTable : public IGUITable {
 public:
 	//! constructor
 	CGUICustomTable(IGUIEnvironment* environment, IGUIElement* parent,
@@ -35,52 +35,52 @@ public:
 
 	//! Adds a column
 	//! If columnIndex is outside the current range, do push new colum at the end
-	void addColumn(const wchar_t* caption, s32 columnIndex = -1) override;
+	virtual void addColumn(const wchar_t* caption, s32 columnIndex = -1);
 
 	//! remove a column from the table
-	void removeColumn(u32 columnIndex) override;
+	virtual void removeColumn(u32 columnIndex);
 
 	//! Returns the number of columns in the table control
-	s32 getColumnCount() const override;
+	virtual s32 getColumnCount() const;
 
 	//! Makes a column active. This will trigger an ordering process.
 	/** \param idx: The id of the column to make active.
 	\return True if successful. */
-	bool setActiveColumn(s32 columnIndex, bool doOrder = false) override;
+	virtual bool setActiveColumn(s32 columnIndex, bool doOrder = false);
 
 	//! Returns which header is currently active
-	s32 getActiveColumn() const override;
+	virtual s32 getActiveColumn() const;
 
 	//! Returns the ordering used by the currently active column
-	EGUI_ORDERING_MODE getActiveColumnOrdering() const override;
+	virtual EGUI_ORDERING_MODE getActiveColumnOrdering() const;
 
 	//! set a column width
-	void setColumnWidth(u32 columnIndex, u32 width) override;
+	virtual void setColumnWidth(u32 columnIndex, u32 width);
 
 	//! Get the width of a column
-	u32 getColumnWidth(u32 columnIndex) const override;
+	virtual u32 getColumnWidth(u32 columnIndex) const;
 
 	//! columns can be resized by drag 'n drop
-	void setResizableColumns(bool resizable) override;
+	virtual void setResizableColumns(bool resizable);
 
 	//! can columns be resized by dran 'n drop?
-	bool hasResizableColumns() const override;
+	virtual bool hasResizableColumns() const;
 
 	//! This tells the table control which ordering mode should be used when
 	//! a column header is clicked.
 	/** \param columnIndex: The index of the column header.
 	\param state: If true, a EGET_TABLE_HEADER_CHANGED message will be sent and you can order the table data as you whish.*/
 	//! \param mode: One of the modes defined in EGUI_COLUMN_ORDERING
-	void setColumnOrdering(u32 columnIndex, EGUI_COLUMN_ORDERING mode) override;
+	virtual void setColumnOrdering(u32 columnIndex, EGUI_COLUMN_ORDERING mode);
 
 	//! Returns which row is currently selected
-	s32 getSelected() const override;
+	virtual s32 getSelected() const;
 
 	//! set wich row is currently selected
-	void setSelected(s32 index) override;
+	virtual void setSelected(s32 index);
 
 	//! Returns amount of rows in the tabcontrol
-	s32 getRowCount() const override;
+	virtual s32 getRowCount() const;
 
 	//! adds a row to the table
 	/** \param rowIndex: zero based index of rows. The row will be
@@ -89,16 +89,16 @@ public:
 		than the actual number of rows by more than one, it
 		won't be created. Note that if you create a row that is
 		not at the end, there might be performance issues*/
-	u32 addRow(u32 rowIndex) override;
+	virtual u32 addRow(u32 rowIndex);
 
 	//! Remove a row from the table
-	void removeRow(u32 rowIndex) override;
+	virtual void removeRow(u32 rowIndex);
 
 	//! clear the table rows, but keep the columns intact
-	void clearRows() override;
+	virtual void clearRows();
 
 	//! Swap two row positions. This is useful for a custom ordering algo.
-	void swapRows(u32 rowIndexA, u32 rowIndexB) override;
+	virtual void swapRows(u32 rowIndexA, u32 rowIndexB);
 
 	//! This tells the table to start ordering all the rows. You
 	//! need to explicitly tell the table to reorder the rows when
@@ -106,82 +106,82 @@ public:
 	//! the system more flexible and doesn't make you pay the cost
 	//! of ordering when adding a lot of rows.
 	//! \param columnIndex: When set to -1 the active column is used.
-	void orderRows(s32 columnIndex = -1, EGUI_ORDERING_MODE mode = EGOM_NONE) override;
+	virtual void orderRows(s32 columnIndex = -1, EGUI_ORDERING_MODE mode = EGOM_NONE);
 
 
 	//! Set the text of a cell
-	void setCellText(u32 rowIndex, u32 columnIndex, const core::stringw& text) override;
+	virtual void setCellText(u32 rowIndex, u32 columnIndex, const core::stringw& text);
 
 	//! Set the text of a cell, and set a color of this cell.
-	void setCellText(u32 rowIndex, u32 columnIndex, const core::stringw& text, video::SColor color) override;
+	virtual void setCellText(u32 rowIndex, u32 columnIndex, const core::stringw& text, video::SColor color);
 
 	//! Set the data of a cell
 	//! data will not be serialized.
-	void setCellData(u32 rowIndex, u32 columnIndex, void *data) override;
+	virtual void setCellData(u32 rowIndex, u32 columnIndex, void *data);
 
 	//! Set the color of a cell text
-	void setCellColor(u32 rowIndex, u32 columnIndex, video::SColor color) override;
+	virtual void setCellColor(u32 rowIndex, u32 columnIndex, video::SColor color);
 
 	//! Get the text of a cell
-	const wchar_t* getCellText(u32 rowIndex, u32 columnIndex) const override;
+	virtual const wchar_t* getCellText(u32 rowIndex, u32 columnIndex) const;
 
 	//! Get the data of a cell
-	void* getCellData(u32 rowIndex, u32 columnIndex) const override;
+	virtual void* getCellData(u32 rowIndex, u32 columnIndex) const;
 
 	//! clears the table, deletes all items in the table
-	void clear() override;
+	virtual void clear();
 
 	//! called if an event happened.
-	bool OnEvent(const SEvent &event) override;
+	virtual bool OnEvent(const SEvent &event);
 
 	//! draws the element and its children
-	void draw() override;
+	virtual void draw();
 
 	//! Set flags, as defined in EGUI_TABLE_DRAW_FLAGS, which influence the layout
-	void setDrawFlags(s32 flags) override;
+	virtual void setDrawFlags(s32 flags);
 
 	//! Get the flags, as defined in EGUI_TABLE_DRAW_FLAGS, which influence the layout
-	s32 getDrawFlags() const override;
+	virtual s32 getDrawFlags() const;
 
-	void setColumnText(u32 columnIndex, const wchar_t* caption);
+	virtual void setColumnText(u32 columnIndex, const wchar_t* caption);
 
 #if IRRLICHT_VERSION_MAJOR==1 && IRRLICHT_VERSION_MINOR==9
 	//! Sets another skin independent font.
-	void setOverrideFont(IGUIFont* font = 0) override;
+	virtual void setOverrideFont(IGUIFont* font = 0);
 
 	//! Gets the override font (if any)
-	IGUIFont* getOverrideFont() const override;
+	virtual IGUIFont* getOverrideFont() const;
 
 	//! Get the font which is used right now for drawing
-	IGUIFont* getActiveFont() const override;
+	virtual IGUIFont* getActiveFont() const;
 
 	//! Get the height of items/rows
-	s32 getItemHeight() const override;
+	virtual s32 getItemHeight() const;
 
 	//! Access the vertical scrollbar
-	IGUIScrollBar* getVerticalScrollBar() const override;
+	virtual IGUIScrollBar* getVerticalScrollBar() const;
 
 	//! Access the horizontal scrollbar
-	IGUIScrollBar* getHorizontalScrollBar() const override;
+	virtual IGUIScrollBar* getHorizontalScrollBar() const;
 
-	void setDrawBackground(bool) override {};
+	virtual void setDrawBackground(bool) {};
 
-	bool isDrawBackgroundEnabled() const override { return false; };
+	virtual bool isDrawBackgroundEnabled() const { return false; };
 #endif
 
 	//! Writes attributes of the object.
 	//! Implement this to expose the attributes of your scene node animator for
 	//! scripting languages, editors, debuggers or xml serialization purposes.
-	void serializeAttributes(io::IAttributes* out, io::SAttributeReadWriteOptions* options = 0) const override;
+	virtual void serializeAttributes(io::IAttributes* out, io::SAttributeReadWriteOptions* options = 0) const;
 
 	//! Reads attributes of the object.
 	//! Implement this to set the attributes of your scene node animator for
 	//! scripting languages, editors, debuggers or xml deserialization purposes.
-	void deserializeAttributes(io::IAttributes* in, io::SAttributeReadWriteOptions* options = 0) override;
+	virtual void deserializeAttributes(io::IAttributes* in, io::SAttributeReadWriteOptions* options = 0);
 
 protected:
-	void refreshControls();
-	void checkScrollbars();
+	virtual void refreshControls();
+	virtual void checkScrollbars();
 
 private:
 

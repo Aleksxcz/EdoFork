@@ -58,7 +58,9 @@ void ClientCard::UpdateInfo(const CoreUtils::Query& query) {
 	}
 	if(query.flag & QUERY_DEFENSE) {
 		if(IsDifferent(defense, query.defense) || defstring.empty()) {
-			if(defense < 0) {
+			if(type & TYPE_LINK) {
+				defstring = L"-";
+			} else if(defense < 0) {
 				defstring = L"?";
 			} else
 				defstring = fmt::to_wstring(defense);
@@ -84,8 +86,8 @@ void ClientCard::UpdateInfo(const CoreUtils::Query& query) {
 	}
 	if(query.flag & QUERY_OVERLAY_CARD) {
 		size_t i = 0;
-		for(auto& overlay_code : query.overlay_cards) {
-			overlayed[i++]->SetCode(overlay_code);
+		for(auto& code : query.overlay_cards) {
+			overlayed[i++]->SetCode(code);
 		}
 	}
 	if(query.flag & QUERY_COUNTERS) {
@@ -120,7 +122,7 @@ void ClientCard::ClearTarget() {
 	}
 	for(auto& pcard : ownerTarget) {
 		pcard->is_showtarget = false;
-		pcard->cardTarget.erase(this);
+		pcard->ownerTarget.erase(this);
 	}
 	cardTarget.clear();
 	ownerTarget.clear();

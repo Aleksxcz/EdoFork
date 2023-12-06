@@ -15,11 +15,14 @@
 #include "../IrrlichtCommonIncludes/CGUITabControl.h"
 #endif
 #include <irrArray.h>
+#ifndef _IRR_OVERRIDE_
+#define _IRR_OVERRIDE_
+#endif
 
 namespace irr {
 namespace gui {
 //! A standard tab control
-class CGUICustomTabControl final : public IGUITabControl {
+class CGUICustomTabControl : public IGUITabControl {
 public:
 
 	//! destructor
@@ -31,96 +34,96 @@ public:
 											   IGUIElement* parent, bool fillbackground = false, bool border = true, s32 id = -1);
 
 	//! destructor
-	~CGUICustomTabControl() override;
+	virtual ~CGUICustomTabControl();
 
 	//! Adds a tab
-	IGUITab* addTab(const wchar_t* caption, s32 id = -1) override;
+	virtual IGUITab* addTab(const wchar_t* caption, s32 id = -1) _IRR_OVERRIDE_;
 
 #if IRRLICHT_VERSION_MAJOR==1 && IRRLICHT_VERSION_MINOR==9
 	//! Adds an existing tab
-	s32 addTab(IGUITab* tab) override { return -1; };
+	virtual s32 addTab(IGUITab* tab) _IRR_OVERRIDE_ { return -1; };
 
 	//! Insert an existing tab
 	/** Note that it will also add the tab as a child of this TabControl.
 	\return Index of added tab (should be same as the one passed) or -1 for failure*/
-	s32 insertTab(s32 idx, IGUITab* tab, bool serializationMode) override { return -1; };
+	virtual s32 insertTab(s32 idx, IGUITab* tab, bool serializationMode) _IRR_OVERRIDE_ { return -1; };
 #else
 	//! Adds a tab that has already been created
-	void addTab(CGUITab* tab) override;
+	virtual void addTab(CGUITab* tab) _IRR_OVERRIDE_;
 #endif
 
 	//! Insert the tab at the given index
-	IGUITab* insertTab(s32 idx, const wchar_t* caption, s32 id = -1) override;
+	virtual IGUITab* insertTab(s32 idx, const wchar_t* caption, s32 id = -1) _IRR_OVERRIDE_;
 
 	//! Removes a tab from the tabcontrol
-	void removeTab(s32 idx) override;
+	virtual void removeTab(s32 idx) _IRR_OVERRIDE_;
 
 	//! Clears the tabcontrol removing all tabs
-	void clear() override;
+	virtual void clear() _IRR_OVERRIDE_;
 
 	//! Returns amount of tabs in the tabcontrol
-	s32 getTabCount() const override;
+	virtual s32 getTabCount() const _IRR_OVERRIDE_;
 
 	//! Returns a tab based on zero based index
-	IGUITab* getTab(s32 idx) const override;
+	virtual IGUITab* getTab(s32 idx) const _IRR_OVERRIDE_;
 
 	//! Brings a tab to front.
-	bool setActiveTab(s32 idx) override;
+	virtual bool setActiveTab(s32 idx) _IRR_OVERRIDE_;
 
 	//! Brings a tab to front.
-	bool setActiveTab(IGUITab *tab) override;
+	virtual bool setActiveTab(IGUITab *tab) _IRR_OVERRIDE_;
 
 	//! Returns which tab is currently active
-	s32 getActiveTab() const override;
+	virtual s32 getActiveTab() const _IRR_OVERRIDE_;
 
 	//! get the the id of the tab at the given absolute coordinates
-	s32 getTabAt(s32 xpos, s32 ypos) const override;
+	virtual s32 getTabAt(s32 xpos, s32 ypos) const _IRR_OVERRIDE_;
 
 	//! called if an event happened.
-	bool OnEvent(const SEvent& event) override;
+	virtual bool OnEvent(const SEvent& event) _IRR_OVERRIDE_;
 
 	//! draws the element and its children
-	void draw() override;
+	virtual void draw() _IRR_OVERRIDE_;
 
 	//! Removes a child.
-	void removeChild(IGUIElement* child) override;
+	virtual void removeChild(IGUIElement* child) _IRR_OVERRIDE_;
 
 	//! Writes attributes of the element.
-	void serializeAttributes(io::IAttributes* out, io::SAttributeReadWriteOptions* options) const override;
+	virtual void serializeAttributes(io::IAttributes* out, io::SAttributeReadWriteOptions* options) const _IRR_OVERRIDE_;
 	//! Set the height of the tabs
-	void setTabHeight(s32 height) override;
+	virtual void setTabHeight(s32 height) _IRR_OVERRIDE_;
 
 	//! Reads attributes of the element
-	void deserializeAttributes(io::IAttributes* in, io::SAttributeReadWriteOptions* options) override;
+	virtual void deserializeAttributes(io::IAttributes* in, io::SAttributeReadWriteOptions* options) _IRR_OVERRIDE_;
 
 	//! Get the height of the tabs
-	s32 getTabHeight() const override;
+	virtual s32 getTabHeight() const _IRR_OVERRIDE_;
 
 	//! set the maximal width of a tab. Per default width is 0 which means "no width restriction".
-	void setTabMaxWidth(s32 width) override;
+	virtual void setTabMaxWidth(s32 width) _IRR_OVERRIDE_;
 
 	//! get the maximal width of a tab
-	s32 getTabMaxWidth() const override;
+	virtual s32 getTabMaxWidth() const _IRR_OVERRIDE_;
 
 	//! Set the alignment of the tabs
 	//! note: EGUIA_CENTER is not an option
-	void setTabVerticalAlignment(gui::EGUI_ALIGNMENT alignment) override;
+	virtual void setTabVerticalAlignment(gui::EGUI_ALIGNMENT alignment) _IRR_OVERRIDE_;
 
 	//! Get the alignment of the tabs
-	gui::EGUI_ALIGNMENT getTabVerticalAlignment() const override;
+	virtual gui::EGUI_ALIGNMENT getTabVerticalAlignment() const _IRR_OVERRIDE_;
 
 	//! Set the extra width added to tabs on each side of the text
-	void setTabExtraWidth(s32 extraWidth) override;
+	virtual void setTabExtraWidth(s32 extraWidth) _IRR_OVERRIDE_;
 
 	//! Get the extra width added to tabs on each side of the text
-	s32 getTabExtraWidth() const override;
+	virtual s32 getTabExtraWidth() const _IRR_OVERRIDE_;
 
 	//! Update the position of the element, decides scroll button status
-	void updateAbsolutePosition() override;
+	virtual void updateAbsolutePosition() _IRR_OVERRIDE_;
 	
 #if IRRLICHT_VERSION_MAJOR==1 && IRRLICHT_VERSION_MINOR==9
 	//! For given given tab find it's zero-based index (or -1 for not found)
-	s32 getTabIndex(const IGUIElement *tab) const override;
+	virtual s32 getTabIndex(const IGUIElement *tab) const _IRR_OVERRIDE_;
 #endif
 
 private:

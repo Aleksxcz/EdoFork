@@ -1,7 +1,6 @@
 #include "data_handler.h"
 #include <curl/curl.h>
 #include <irrlicht.h>
-#include "config.h"
 #include "utils_gui.h"
 #include "deck_manager.h"
 #include "logging.h"
@@ -14,10 +13,10 @@
 #include "IrrlichtCommonIncludes/CFileSystem.h"
 #endif
 #include "porting.h"
-#if EDOPRO_ANDROID
+#ifdef __ANDROID__
 #include "Android/COSAndroidOperator.h"
 #endif
-#if EDOPRO_IOS
+#ifdef EDOPRO_IOS
 #include "iOS/COSiOSOperator.h"
 #endif
 
@@ -101,16 +100,16 @@ void DataHandler::LoadZipArchives() {
 	}
 }
 DataHandler::DataHandler() {
-	configs = std::make_unique<GameConfig>();
+	configs = std::unique_ptr<GameConfig>(new GameConfig());
 	gGameConfig = configs.get();
 	tmp_device = nullptr;
-#if EDOPRO_IOS
+#if defined(EDOPRO_IOS)
 	tmp_device = GUIUtils::CreateDevice(configs.get());
 	if(tmp_device->getVideoDriver())
 		porting::exposed_data = &tmp_device->getVideoDriver()->getExposedVideoData();
 	Utils::OSOperator = new irr::COSiOSOperator();
-	configs->ssl_certificate_path = epro::format("{}/cacert.pem", Utils::GetWorkingDirectory());
-#elif EDOPRO_ANDROID
+	configs->ssl_certificate_path = epro::format("{}/cacert.pem", Utils::GetExeFolder());
+#elif defined(__ANDROID__)
 	Utils::OSOperator = new irr::COSAndroidOperator();
 	configs->ssl_certificate_path = epro::format("{}/cacert.pem", porting::internal_storage);
 #else
@@ -124,21 +123,21 @@ DataHandler::DataHandler() {
 		configs->ssl_certificate_path = epro::format("{}/cacert.pem", Utils::ToUTF8IfNeeded(Utils::GetWorkingDirectory()));
 #endif
 	filesystem = new irr::io::CFileSystem();
-	dataManager = std::make_unique<DataManager>();
+	dataManager = std::unique_ptr<DataManager>(new DataManager());
 	auto strings_loaded = dataManager->LoadStrings(EPRO_TEXT("./config/strings.conf"));
 	strings_loaded = dataManager->LoadStrings(EPRO_TEXT("./expansions/strings.conf")) || strings_loaded;
 	if(!strings_loaded)
 		throw std::runtime_error("Failed to load strings!");
 	Utils::filesystem = filesystem;
 	LoadZipArchives();
-	deckManager = std::make_unique<DeckManager>();
-	gitManager = std::make_unique<RepoManager>();
-	sounds = std::make_unique<SoundManager>(configs->soundVolume / 100.0, configs->musicVolume / 100.0, configs->enablesound, configs->enablemusic);
+	deckManager = std::unique_ptr<DeckManager>(new DeckManager());
+	gitManager = std::unique_ptr<RepoManager>(new RepoManager());
+	sounds = std::unique_ptr<SoundManager>(new SoundManager(configs->soundVolume / 100.0, configs->musicVolume / 100.0, configs->enablesound, configs->enablemusic));
 	gitManager->LoadRepositoriesFromJson(configs->user_configs);
 	gitManager->LoadRepositoriesFromJson(configs->configs);
 	if(gitManager->TerminateIfNothingLoaded())
 		deckManager->StopDummyLoading();
-	imageDownloader = std::make_unique<ImageDownloader>();
+	imageDownloader = std::unique_ptr<ImageDownloader>(new ImageDownloader());
 	LoadDatabases();
 	LoadPicUrls();
 	deckManager->LoadLFList();

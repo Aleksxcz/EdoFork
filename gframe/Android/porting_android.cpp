@@ -9,13 +9,11 @@
 #include <irrlicht.h>
 #include <vector>
 #include <unistd.h>
-#include <netinet/in.h>
 #include "../log.h"
 #include "../bufferio.h"
 #include "../sound_manager.h"
 #include "../game_config.h"
 #include "../game.h"
-#include "../epro_mutex.h"
 
 #define JPARAMS(...)  "(" __VA_ARGS__ ")"
 #define JARRAY(...) "[" __VA_ARGS__
@@ -234,7 +232,7 @@ void cleanupAndroid() {
 	jvm->DetachCurrentThread();
 }
 
-void displayKeyboard(bool pShow) {
+void displayKeyboard(bool pShow) {	
 	// Retrieves NativeActivity.
 	jobject lNativeActivity = app_global->activity->clazz;
 	jclass ClassNativeActivity = jnienv->GetObjectClass(lNativeActivity);
@@ -281,7 +279,7 @@ void displayKeyboard(bool pShow) {
 		// Runs lInputMethodManager.showSoftInput(...).
 		jmethodID MethodShowSoftInput = jnienv->GetMethodID(
 			ClassInputMethodManager, "showSoftInput", JPARAMS("Landroid/view/View;" JINT)JBOOL);
-		(void)jnienv->CallBooleanMethod(
+		jboolean lResult = jnienv->CallBooleanMethod(
 			lInputMethodManager, MethodShowSoftInput,
 			lDecorView, lFlags);
 	} else {
@@ -300,7 +298,7 @@ void displayKeyboard(bool pShow) {
 		jmethodID MethodHideSoftInput = jnienv->GetMethodID(
 			ClassInputMethodManager, "hideSoftInputFromWindow",
 			JPARAMS("Landroid/os/IBinder;" JINT)JBOOL);
-		(void)jnienv->CallBooleanMethod(
+		jboolean lRes = jnienv->CallBooleanMethod(
 			lInputMethodManager, MethodHideSoftInput,
 			lBinder, lFlags);
 
@@ -334,7 +332,7 @@ void showComboBox(const std::vector<std::string>& parameters, int selected) {
 	jsize len = parameters.size();
 	jobjectArray jlist = jnienv->NewObjectArray(len, jnienv->FindClass("java/lang/String"), 0);
 
-	for(size_t i = 0; i < parameters.size(); i++) {
+	for(int i = 0; i < parameters.size(); i++) {
 		auto jstring = NewJavaString(jnienv, parameters[i]);
 		jnienv->SetObjectArrayElement(jlist, i, jstring);
 		jnienv->DeleteLocalRef(jstring);
@@ -346,6 +344,7 @@ void showComboBox(const std::vector<std::string>& parameters, int selected) {
 }
 
 bool transformEvent(const irr::SEvent & event, bool& stopPropagation) {
+	auto device = static_cast<irr::IrrlichtDevice*>(porting::app_global->userData);
 	switch(event.EventType) {
 		case irr::EET_MOUSE_INPUT_EVENT: {
 			if(event.MouseInput.Event == irr::EMIE_LMOUSE_PRESSED_DOWN) {
@@ -383,10 +382,6 @@ bool transformEvent(const irr::SEvent & event, bool& stopPropagation) {
 						mainGameMutex = std::unique_ptr<std::unique_lock<epro::mutex>>(new std::unique_lock<epro::mutex>(ygo::mainGame->gMutex));
 					break;
 				}
-				case APP_CMD_STOP: {
-					mainGameMutex = nullptr;
-					break;
-				}
 				case APP_CMD_GAINED_FOCUS:
 				case APP_CMD_LOST_FOCUS: {
 					stopPropagation = true;
@@ -406,31 +401,13 @@ bool transformEvent(const irr::SEvent & event, bool& stopPropagation) {
 	return false;
 }
 
-std::vector<epro::Address> getLocalIP() {
-	std::vector<epro::Address> addresses;
-	jmethodID getIP = jnienv->GetMethodID(nativeActivity, "getLocalIpAddresses", JPARAMS()JARRAY(JARRAY(JBYTE)));
+int getLocalIP() {
+	jmethodID getIP = jnienv->GetMethodID(nativeActivity, "getLocalIpAddress", JPARAMS()JINT);
 	if(getIP == 0) {
-		assert("porting::getLocalIP unable to find java getLocalIpAddresses method" == 0);
+		assert("porting::getLocalIP unable to find java getLocalIpAddress method" == 0);
 	}
-	jobjectArray ipArray = (jobjectArray)jnienv->CallObjectMethod(app_global->activity->clazz, getIP);
-	int size = jnienv->GetArrayLength(ipArray);
-
-	for(int i = 0; i < size; ++i) {
-		jbyteArray ipBuffer = static_cast<jbyteArray>(jnienv->GetObjectArrayElement(ipArray, i));
-		int ipBufferSize = jnienv->GetArrayLength(ipBuffer);
-		(void)ipBufferSize;
-		jbyte* ipJava = jnienv->GetByteArrayElements(ipBuffer, nullptr);
-		if(ipBufferSize == 4) {
-			addresses.emplace_back(ipJava, epro::Address::INET);
-		} else {
-			addresses.emplace_back(ipJava, epro::Address::INET6);
-		}
-		jnienv->ReleaseByteArrayElements(ipBuffer, ipJava, JNI_ABORT);
-		jnienv->DeleteLocalRef(ipBuffer);
-	}
-
-	jnienv->DeleteLocalRef(ipArray);
-	return addresses;
+	int value = jnienv->CallIntMethod(app_global->activity->clazz, getIP);
+	return value;
 }
 
 #define JAVAVOIDSTRINGMETHOD(name)\
@@ -465,6 +442,7 @@ void showErrorDialog(epro::stringview context, epro::stringview message) {
 
 	//keep parsing events so that the activity is drawn properly
 	int Events = 0;
+	int ident = 0;
 	android_poll_source* source = 0;
 	while(!error_dialog_returned &&
 		ALooper_pollAll(-1, nullptr, &Events, (void**)&source) >= 0 &&
@@ -511,7 +489,7 @@ void dispatchQueuedMessages() {
 
 }
 
-extern "C" int edopro_main(int argc, char *argv[]);
+extern int main(int argc, char *argv[]);
 
 void android_main(android_app *app) {
 	int retval = 0;
@@ -531,8 +509,8 @@ void android_main(android_app *app) {
 	}
 	//no longer needed after ndk 15c
 	//app_dummy();
-	retval = edopro_main(params.size(), (char**)params.data());
+	retval = main(params.size(), (char**)params.data());
 
 	porting::cleanupAndroid();
-	_exit(retval);
+	exit(retval);
 }

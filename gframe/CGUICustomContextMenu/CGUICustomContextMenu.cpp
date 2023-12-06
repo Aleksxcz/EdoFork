@@ -25,13 +25,14 @@ namespace gui {
 CGUICustomContextMenu::CGUICustomContextMenu(IGUIEnvironment* environment,
 											 IGUIElement* parent, s32 id, core::rect<s32> rectangle,
 											 bool getFocus, bool allowFocus, core::rect<s32>* maxRect)
-	: IGUIContextMenu(environment, parent, id, rectangle), scrOrizontal(nullptr), scrVertical(nullptr), MaxRect(maxRect),
-	Pos(rectangle.UpperLeftCorner), EventParent(0), LastFont(0), CloseHandling(ECMC_REMOVE),
-	HighLighted(-1), ChangeTime(0), AllowFocus(allowFocus) {
+	: IGUIContextMenu(environment, parent, id, rectangle), EventParent(0), LastFont(0),
+	CloseHandling(ECMC_REMOVE), HighLighted(-1), ChangeTime(0), AllowFocus(allowFocus), scrOrizontal(nullptr), scrVertical(nullptr) {
 #ifdef _DEBUG
 	setDebugName("CGUICustomContextMenu");
 #endif
 
+	Pos = rectangle.UpperLeftCorner;
+	MaxRect = maxRect;
 	recalculateSize();
 
 	if(getFocus)
@@ -285,12 +286,12 @@ bool CGUICustomContextMenu::OnEvent(const SEvent& event) {
 							IGUIElement * p = EventParent ? EventParent : Parent;
 							setEventParent(p);
 
-							SEvent closed_event;
-							closed_event.EventType = EET_GUI_EVENT;
-							closed_event.GUIEvent.Caller = this;
-							closed_event.GUIEvent.Element = 0;
-							closed_event.GUIEvent.EventType = EGET_ELEMENT_CLOSED;
-							if(!p->OnEvent(closed_event)) {
+							SEvent event;
+							event.EventType = EET_GUI_EVENT;
+							event.GUIEvent.Caller = this;
+							event.GUIEvent.Element = 0;
+							event.GUIEvent.EventType = EGET_ELEMENT_CLOSED;
+							if(!p->OnEvent(event)) {
 								if(CloseHandling & ECMC_HIDE) {
 									setVisible(false);
 								}
@@ -317,7 +318,7 @@ bool CGUICustomContextMenu::OnEvent(const SEvent& event) {
 					{
 						// menu might be removed if it loses focus in sendClick, so grab a reference
 						grab();
-						const u32 t = sendClick(core::vector2d<s32>(event.MouseInput.X, event.MouseInput.Y));
+						const u32 t = sendClick(core::position2d<s32>(event.MouseInput.X, event.MouseInput.Y));
 						if((t == 0 || t == 1) && Environment->hasFocus(this))
 							Environment->removeFocus(this);
 						drop();
@@ -327,7 +328,7 @@ bool CGUICustomContextMenu::OnEvent(const SEvent& event) {
 						return true;
 					case EMIE_MOUSE_MOVED:
 						if(Environment->hasFocus(this))
-							highlight(core::vector2d<s32>(event.MouseInput.X, event.MouseInput.Y), true);
+							highlight(core::position2d<s32>(event.MouseInput.X, event.MouseInput.Y), true);
 						return true;
 					default:
 						break;
@@ -358,7 +359,7 @@ void CGUICustomContextMenu::setVisible(bool visible) {
 //! 0 if click went outside of the element,
 //! 1 if a valid button was clicked,
 //! 2 if a nonclickable element was clicked
-u32 CGUICustomContextMenu::sendClick(const core::vector2d<s32>& p) {
+u32 CGUICustomContextMenu::sendClick(const core::position2d<s32>& p) {
 	u32 t = 0;
 
 	// get number of open submenu
@@ -407,7 +408,7 @@ u32 CGUICustomContextMenu::sendClick(const core::vector2d<s32>& p) {
 
 
 //! returns true, if an element was highligted
-bool CGUICustomContextMenu::highlight(const core::vector2d<s32>& p, bool canOpenSubMenu) {
+bool CGUICustomContextMenu::highlight(const core::position2d<s32>& p, bool canOpenSubMenu) {
 	if(!isEnabled()) {
 		return false;
 	}
@@ -504,6 +505,7 @@ void CGUICustomContextMenu::draw() {
 	// loop through all menu items
 
 	rect = AbsoluteRect;
+	s32 y = AbsoluteRect.UpperLeftCorner.Y;
 
 	for(s32 i = 0; i < (s32)Items.size(); ++i) {
 		if(Items[i].IsSeparator) {
@@ -518,6 +520,8 @@ void CGUICustomContextMenu::draw() {
 			rect.LowerRightCorner.Y += 1;
 			rect.UpperLeftCorner.Y += 1;
 			skin->draw2DRectangle(this, skin->getColor(EGDC_3D_HIGH_LIGHT), rect, clip);
+
+			y += 10;
 		} else if(Items[i].IsCustom) {
 			/*draw of tose elements is andled by the engine*/
 		} else {

@@ -2,7 +2,7 @@
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 #include "../config.h"
-#if EDOPRO_ANDROID || EDOPRO_IOS
+#if defined(__ANDROID__) || defined(EDOPRO_IOS)
 #include "CGUICustomComboBox.h"
 #ifdef _IRR_COMPILE_WITH_GUI_
 
@@ -255,7 +255,7 @@ bool CGUICustomComboBox::OnEvent(const SEvent& event) {
 				break;
 			case EGET_BUTTON_CLICKED:
 				if(event.GUIEvent.Caller == ListButton) {
-#if EDOPRO_ANDROID
+#ifdef __ANDROID__
 					if(!ygo::gGameConfig->native_mouse)
 #endif
 						Environment->setFocus(this);
@@ -299,7 +299,7 @@ bool CGUICustomComboBox::OnEvent(const SEvent& event) {
 				if(!(ListBox &&
 					 ListBox->getAbsolutePosition().isPointInside(p) &&
 					 ListBox->OnEvent(event))) {
-#if EDOPRO_ANDROID
+#ifdef __ANDROID__
 					if(!ygo::gGameConfig->native_mouse)
 #endif
 						Environment->setFocus(this);
@@ -414,12 +414,12 @@ void CGUICustomComboBox::draw() {
 
 
 void CGUICustomComboBox::openCloseMenu() {
-#if EDOPRO_ANDROID
+#ifdef __ANDROID__
 	if(!ygo::gGameConfig->native_mouse)
 #endif
 	{
 		std::vector<std::string> parameters;
-		for(auto i = 0u; i < Items.size(); i++) {
+		for(int i = 0; i < Items.size(); i++) {
 			parameters.push_back(BufferIO::EncodeUTF8({ Items[i].Name.data(), Items[i].Name.size() }));
 		}
 		porting::showComboBox(parameters, Selected);
@@ -517,4 +517,4 @@ void CGUICustomComboBox::deserializeAttributes(io::IAttributes* in, io::SAttribu
 
 
 #endif // _IRR_COMPILE_WITH_GUI_
-#endif // EDOPRO_ANDROID || EDOPRO_IOS
+#endif // __ANDROID__

@@ -39,7 +39,6 @@
 #include <IGUIScrollBar.h>
 #include "joystick_wrapper.h"
 #include "porting.h"
-#include "config.h"
 
 namespace {
 
@@ -56,12 +55,14 @@ inline void SetCheckbox(irr::gui::IGUICheckBox* chk, bool state) {
 	TriggerEvent(chk, irr::gui::EGET_CHECKBOX_CHANGED);
 }
 
-#if EDOPRO_ANDROID || EDOPRO_IOS
+#if defined(__ANDROID__) || defined(EDOPRO_IOS)
 inline bool TransformEvent(const irr::SEvent& event, bool& stopPropagation) {
 	return porting::transformEvent(event, stopPropagation);
 }
 #else
-inline constexpr bool TransformEvent(const irr::SEvent&, bool&) {
+inline constexpr bool TransformEvent(const irr::SEvent& event, bool& stopPropagation) {
+	(void)event;
+	(void)stopPropagation;
 	return false;
 }
 #endif
@@ -387,7 +388,7 @@ bool ClientField::OnEvent(const irr::SEvent& event) {
 								if(id == BUTTON_CMD_RESET) continue;
 							}
 							select_options.push_back(activatable_descs[i].first);
-							if (index == -1) index = static_cast<int>(i);
+							if (index == -1) index = i;
 						}
 					}
 					if (select_options.size() == 1) {
@@ -459,7 +460,7 @@ bool ClientField::OnEvent(const irr::SEvent& event) {
 				for(size_t i = 0; i < summonable_cards.size(); ++i) {
 					if(summonable_cards[i] == clicked_card) {
 						ClearCommandFlag();
-						DuelClient::SetResponseI(static_cast<uint32_t>(i) << 16);
+						DuelClient::SetResponseI(i << 16);
 						DuelClient::SendResponse();
 						break;
 					}
@@ -474,7 +475,7 @@ bool ClientField::OnEvent(const irr::SEvent& event) {
 					for(size_t i = 0; i < spsummonable_cards.size(); ++i) {
 						if(spsummonable_cards[i] == clicked_card) {
 							ClearCommandFlag();
-							DuelClient::SetResponseI((static_cast<uint32_t>(i) << 16) + 1);
+							DuelClient::SetResponseI((i << 16) + 1);
 							DuelClient::SendResponse();
 							break;
 						}
@@ -521,7 +522,7 @@ bool ClientField::OnEvent(const irr::SEvent& event) {
 					break;
 				for(size_t i = 0; i < msetable_cards.size(); ++i) {
 					if(msetable_cards[i] == clicked_card) {
-						DuelClient::SetResponseI((static_cast<uint32_t>(i) << 16) + 3);
+						DuelClient::SetResponseI((i << 16) + 3);
 						DuelClient::SendResponse();
 						break;
 					}
@@ -534,7 +535,7 @@ bool ClientField::OnEvent(const irr::SEvent& event) {
 					break;
 				for(size_t i = 0; i < ssetable_cards.size(); ++i) {
 					if(ssetable_cards[i] == clicked_card) {
-						DuelClient::SetResponseI((static_cast<uint32_t>(i) << 16) + 4);
+						DuelClient::SetResponseI((i << 16) + 4);
 						DuelClient::SendResponse();
 						break;
 					}
@@ -547,7 +548,7 @@ bool ClientField::OnEvent(const irr::SEvent& event) {
 					break;
 				for(size_t i = 0; i < reposable_cards.size(); ++i) {
 					if(reposable_cards[i] == clicked_card) {
-						DuelClient::SetResponseI((static_cast<uint32_t>(i) << 16) + 2);
+						DuelClient::SetResponseI((i << 16) + 2);
 						DuelClient::SendResponse();
 						break;
 					}
@@ -560,7 +561,7 @@ bool ClientField::OnEvent(const irr::SEvent& event) {
 					break;
 				for(size_t i = 0; i < attackable_cards.size(); ++i) {
 					if(attackable_cards[i] == clicked_card) {
-						DuelClient::SetResponseI((static_cast<uint32_t>(i) << 16) + 1);
+						DuelClient::SetResponseI((i << 16) + 1);
 						DuelClient::SendResponse();
 						break;
 					}
@@ -674,7 +675,7 @@ bool ClientField::OnEvent(const irr::SEvent& event) {
 									if(list_command == COMMAND_OPERATION) continue;
 								}
 								select_options.push_back(activatable_descs[i].first);
-								if (index == -1) index = static_cast<int>(i);
+								if (index == -1) index = i;
 							}
 						}
 						if (select_options.size() == 1) {
@@ -856,8 +857,8 @@ bool ClientField::OnEvent(const irr::SEvent& event) {
 				break;
 			}
 			case CHECK_RACE: {
-				uint64_t rac = 0, filter = 0x1, count = 0;
-				for(size_t i = 0; i < sizeofarr(mainGame->chkRace); ++i, filter <<= 1) {
+				int rac = 0, filter = 0x1, count = 0;
+				for(int i = 0; i < 25; ++i, filter <<= 1) {
 					if(mainGame->chkRace[i]->isChecked()) {
 						rac |= filter;
 						count++;
@@ -1019,8 +1020,8 @@ bool ClientField::OnEvent(const irr::SEvent& event) {
 				}
 				break;
 			}
-			}
 			break;
+			}
 		}
 		case irr::gui::EGET_EDITBOX_CHANGED: {
 			switch(id) {
@@ -1438,9 +1439,9 @@ bool ClientField::OnEvent(const irr::SEvent& event) {
 					clicked_card->is_selected = true;
 					selected_cards.push_back(clicked_card);
 				}
-				uint32_t min = static_cast<uint32_t>(selected_cards.size()), max = 0;
+				uint32_t min = selected_cards.size(), max = 0;
 				if (mainGame->dInfo.curMsg == MSG_SELECT_CARD) {
-					max = static_cast<uint32_t>(selected_cards.size());
+					max = selected_cards.size();
 				} else {
 					for(size_t i = 0; i < selected_cards.size(); ++i)
 						max += selected_cards[i]->opParam;
@@ -1524,6 +1525,7 @@ bool ClientField::OnEvent(const irr::SEvent& event) {
 			auto x = event.MouseInput.X;
 			auto y = event.MouseInput.Y;
 			irr::core::vector2di pos(x, y);
+			irr::gui::IGUIElement* root = mainGame->env->getRootGUIElement();
 			if(mainGame->dInfo.isInDuel && mainGame->ignore_chain) {
 				mainGame->ignore_chain = false;
 				mainGame->always_chain = event.MouseInput.isLeftPressed();
@@ -1574,9 +1576,9 @@ bool ClientField::OnEvent(const irr::SEvent& event) {
 				} else {
 					const auto& self = mainGame->dInfo.isTeam1 ? mainGame->dInfo.selfnames : mainGame->dInfo.opponames;
 					const auto& oppo = mainGame->dInfo.isTeam1 ? mainGame->dInfo.opponames : mainGame->dInfo.selfnames;
-					if(mainGame->Resize(327, 8, 630, 51 + static_cast<irr::s32>(23 * (self.size() - 1))).isPointInside(mousepos))
+					if(mainGame->Resize(327, 8, 630, 51 + (23 * (self.size() - 1))).isPointInside(mousepos))
 						mplayer = 0;
-					else if(mainGame->Resize(689, 8, 991, 51 + static_cast<irr::s32>(23 * (oppo.size() - 1))).isPointInside(mousepos))
+					else if(mainGame->Resize(689, 8, 991, 51 + (23 * (oppo.size() - 1))).isPointInside(mousepos))
 						mplayer = 1;
 				}
 			}
@@ -1613,12 +1615,13 @@ bool ClientField::OnEvent(const irr::SEvent& event) {
 					SetShowMark(mcard, true);
 					if(mcard->code) {
 						mainGame->ShowCardInfo(mcard->code);
-						if(mcard->location & (LOCATION_HAND | LOCATION_MZONE | LOCATION_SZONE | LOCATION_SKILL)) {
+						if(mcard->location & (0xe|0x400)) {
 							std::wstring str(gDataManager->GetName(mcard->code));
-							if(!CardDataC::IsInArtworkOffsetRange(mcard) && str != gDataManager->GetName(mcard->alias)) {
-								str.append(epro::format(L"\n({})", gDataManager->GetName(mcard->alias)));
-							}
 							if(mcard->type & TYPE_MONSTER) {
+								if(mcard->alias && (mcard->alias < mcard->code - 10 || mcard->alias > mcard->code + 10)
+										&& wcscmp(gDataManager->GetName(mcard->code).data(), gDataManager->GetName(mcard->alias).data())) {
+									str.append(epro::format(L"\n({})",gDataManager->GetName(mcard->alias)));
+								}
 								if (mcard->type & TYPE_LINK) {
 									str.append(epro::format(L"\n{}/Link {}\n{}/{}", mcard->atkstring, mcard->link, gDataManager->FormatRace(mcard->race),
 										gDataManager->FormatAttribute(mcard->attribute)));
@@ -1630,9 +1633,16 @@ bool ClientField::OnEvent(const irr::SEvent& event) {
 										str.append(epro::format(L"\n{}{} {}/{}", (mcard->level ? L"\u2605" : L"\u2606"), (mcard->level ? mcard->level : mcard->rank), gDataManager->FormatRace(mcard->race), gDataManager->FormatAttribute(mcard->attribute)));
 									}
 								}
-							}
-							if((mcard->location & (LOCATION_HAND | LOCATION_SZONE)) != 0 && (mcard->type & TYPE_PENDULUM)) {
-								str.append(epro::format(L"\n{}/{}", mcard->lscale, mcard->rscale));
+								if(mcard->location == LOCATION_HAND && (mcard->type & TYPE_PENDULUM)) {
+									str.append(epro::format(L"\n{}/{}", mcard->lscale, mcard->rscale));
+								}
+							} else {
+								if(mcard->alias && (mcard->alias < mcard->code - 10 || mcard->alias > mcard->code + 10)) {
+									str.append(epro::format(L"\n({})", gDataManager->GetName(mcard->alias)));
+								}
+								if(mcard->location == LOCATION_SZONE && (mcard->type & TYPE_PENDULUM)) {
+									str.append(epro::format(L"\n{}/{}", mcard->lscale, mcard->rscale));
+								}
 							}
 							for(auto ctit = mcard->counters.begin(); ctit != mcard->counters.end(); ++ctit) {
 								str.append(epro::format(L"\n[{}]: {}", gDataManager->GetCounterName(ctit->first), ctit->second));
@@ -1676,7 +1686,8 @@ bool ClientField::OnEvent(const irr::SEvent& event) {
 						player_name = self[mainGame->dInfo.current_player[mplayer]];
 					else
 						player_name = oppo[mainGame->dInfo.current_player[mplayer]];
-					for(const auto& hint : player_desc_hints[mplayer]) {
+					const auto& player_desc_hints = mainGame->dField.player_desc_hints[mplayer];
+					for(const auto& hint : player_desc_hints) {
 						player_name.append(epro::format(L"\n*{}", gDataManager->GetDesc(hint.first, mainGame->dInfo.compat_mode)));
 					}
 					should_show_tip = true;
@@ -1799,7 +1810,7 @@ static bool IsTrulyVisible(const irr::gui::IGUIElement* elem) {
 			return true;
 	}
 	return false;
-}
+};
 bool ClientField::OnCommonEvent(const irr::SEvent& event, bool& stopPropagation) {
 	static irr::u32 buttonstates = 0;
 	static uint8_t resizestate = gGameConfig->fullscreen ? 2 : 0;
@@ -1992,10 +2003,7 @@ bool ClientField::OnCommonEvent(const irr::SEvent& event, bool& stopPropagation)
 				gGameConfig->showScopeLabel = mainGame->gSettings.chkShowScopeLabel->isChecked();
 				return true;
 			}
-			case CHECKBOX_IGNORE_DECK_CONTENTS: {
-				gGameConfig->ignoreDeckContents = mainGame->gSettings.chkIgnoreDeckContents->isChecked();
-				return true;
-			}
+			
 			case CHECKBOX_SHOW_FPS: {
 				gGameConfig->showFPS = mainGame->gSettings.chkShowFPS->isChecked();
 				mainGame->fpsCounter->setVisible(gGameConfig->showFPS);
@@ -2050,7 +2058,7 @@ bool ClientField::OnCommonEvent(const irr::SEvent& event, bool& stopPropagation)
 				gGameConfig->logDownloadErrors = static_cast<irr::gui::IGUICheckBox*>(event.GUIEvent.Caller)->isChecked();
 				break;
 			}
-#if EDOPRO_ANDROID
+#ifdef __ANDROID__
 			case CHECKBOX_NATIVE_KEYBOARD: {
 				gGameConfig->native_keyboard = static_cast<irr::gui::IGUICheckBox*>(event.GUIEvent.Caller)->isChecked();
 				break;
@@ -2146,11 +2154,6 @@ bool ClientField::OnCommonEvent(const irr::SEvent& event, bool& stopPropagation)
 		}
 		case irr::gui::EGET_COMBO_BOX_CHANGED: {
 			switch(id) {
-			case COMBOBOX_VSYNC: {
-				gGameConfig->vsync = mainGame->gSettings.cbVSync->getSelected();
-				GUIUtils::ToggleSwapInterval(mainGame->driver, gGameConfig->vsync);
-				return true;
-			}
 			case COMBOBOX_CURRENT_SKIN: {
 				auto newskin = Utils::ToPathString(mainGame->gSettings.cbCurrentSkin->getItem(mainGame->gSettings.cbCurrentSkin->getSelected()));
 				mainGame->should_reload_skin = newskin != gGameConfig->skin;
@@ -2454,12 +2457,12 @@ irr::core::vector3df MouseToPlane(const irr::core::vector2d<irr::s32>& mouse, co
 	return startintersection;
 }
 
-inline irr::core::vector3df MouseToField(const irr::core::vector2d<irr::s32>& mouse) {
+inline irr::core::vector3df MouseToField(irr::core::vector2d<irr::s32> mouse) {
 	const auto& vec = matManager.getExtra()[0];
 	return MouseToPlane(mouse, { vec[0].Pos, vec[1].Pos, vec[2].Pos });
 }
 
-bool CheckHand(const irr::core::vector2d<irr::s32>& mouse, const std::vector<ClientCard*>& hand) {
+bool CheckHand(const irr::core::vector2d<irr::s32>& mouse, std::vector<ClientCard*>& hand) {
 	if(hand.empty()) return false;
 	irr::core::recti rect{ hand.front()->hand_collision.UpperLeftCorner, hand.back()->hand_collision.LowerRightCorner };
 	if(!rect.isValid())
@@ -2467,9 +2470,9 @@ bool CheckHand(const irr::core::vector2d<irr::s32>& mouse, const std::vector<Cli
 	return rect.isPointInside(mouse);
 }
 
-void ClientField::GetHoverField(const irr::core::vector2d<irr::s32>& mouse) {
-	const int three_columns = mainGame->dInfo.HasFieldFlag(DUEL_3_COLUMNS_FIELD);
-	const int not_separate_pzones = !mainGame->dInfo.HasFieldFlag(DUEL_SEPARATE_PZONE);
+void ClientField::GetHoverField(irr::core::vector2d<irr::s32> mouse) {
+	const int speed = (mainGame->dInfo.duel_params & DUEL_3_COLUMNS_FIELD) ? 1 : 0;
+	const int field = (mainGame->dInfo.duel_field == 3 || mainGame->dInfo.duel_field == 5) ? 0 : 1;
 	if(CheckHand(mouse, hand[0])) {
 		hovered_controler = 0;
 		hovered_location = LOCATION_HAND;
@@ -2503,14 +2506,14 @@ void ClientField::GetHoverField(const irr::core::vector2d<irr::s32>& mouse) {
 				hovered_controler = 0;
 				hovered_location = LOCATION_SZONE;
 				hovered_sequence = 5;
-			} else if(!not_separate_pzones && boardy >= matManager.getSzone()[0][6][0].Pos.Y && boardy <= matManager.getSzone()[0][6][2].Pos.Y) {
+			} else if(field == 0 && boardy >= matManager.getSzone()[0][6][0].Pos.Y && boardy <= matManager.getSzone()[0][6][2].Pos.Y) {
 				hovered_controler = 0;
 				hovered_location = LOCATION_SZONE;
 				hovered_sequence = 6;
-			} else if(not_separate_pzones && boardy >= matManager.getRemove()[1][2].Pos.Y && boardy <= matManager.getRemove()[1][0].Pos.Y) {
+			} else if(field == 1 && boardy >= matManager.getRemove()[1][2].Pos.Y && boardy <= matManager.getRemove()[1][0].Pos.Y) {
 				hovered_controler = 1;
 				hovered_location = LOCATION_REMOVED;
-			} else if(!not_separate_pzones && boardy >= matManager.getSzone()[1][7][2].Pos.Y && boardy <= matManager.getSzone()[1][7][0].Pos.Y) {
+			} else if(field == 0 && boardy >= matManager.getSzone()[1][7][2].Pos.Y && boardy <= matManager.getSzone()[1][7][0].Pos.Y) {
 				hovered_controler = 1;
 				hovered_location = LOCATION_SZONE;
 				hovered_sequence = 7;
@@ -2520,31 +2523,31 @@ void ClientField::GetHoverField(const irr::core::vector2d<irr::s32>& mouse) {
 			} else if(boardy >= matManager.getDeck()[1][2].Pos.Y && boardy <= matManager.getDeck()[1][0].Pos.Y) {
 				hovered_controler = 1;
 				hovered_location = LOCATION_DECK;
-			} else if(not_separate_pzones && boardy >= matManager.getSkill()[0][0].Pos.Y && boardy <= matManager.getSkill()[0][2].Pos.Y) {
+			} else if(field == 1 && boardy >= matManager.getSkill()[0][0].Pos.Y && boardy <= matManager.getSkill()[0][2].Pos.Y) {
 				hovered_controler = 0;
 				hovered_location = LOCATION_SKILL;
 			}
-		} else if(!not_separate_pzones && boardx >= matManager.getRemove()[1][1].Pos.X && boardx <= matManager.getRemove()[1][0].Pos.X) {
+		} else if(field == 0 && boardx >= matManager.getRemove()[1][1].Pos.X && boardx <= matManager.getRemove()[1][0].Pos.X) {
 			if(boardy >= matManager.getRemove()[1][2].Pos.Y && boardy <= matManager.getRemove()[1][0].Pos.Y) {
 				hovered_controler = 1;
 				hovered_location = LOCATION_REMOVED;
-			} else if(boardy >= matManager.vFieldContiAct[three_columns][0].Y && boardy <= matManager.vFieldContiAct[three_columns][2].Y) {
+			} else if(boardy >= matManager.vFieldContiAct[speed][0].Y && boardy <= matManager.vFieldContiAct[speed][2].Y) {
 				hovered_controler = 0;
 				hovered_location = POSITION_HINT;
 			} else if(boardy >= matManager.getSkill()[0][0].Pos.Y && boardy <= matManager.getSkill()[0][2].Pos.Y) {
 				hovered_controler = 0;
 				hovered_location = LOCATION_SKILL;
 			}
-		} else if(three_columns && boardx >= matManager.getSkill()[0][1].Pos.X && boardx <= matManager.getSkill()[0][2].Pos.X &&
+		} else if(speed == 1 && boardx >= matManager.getSkill()[0][1].Pos.X && boardx <= matManager.getSkill()[0][2].Pos.X &&
 				  boardy >= matManager.getSkill()[0][0].Pos.Y && boardy <= matManager.getSkill()[0][2].Pos.Y) {
 			hovered_controler = 0;
 			hovered_location = LOCATION_SKILL;
-		} else if(not_separate_pzones && boardx >= matManager.getSzone()[1][7][1].Pos.X && boardx <= matManager.getSzone()[1][7][2].Pos.X) {
+		} else if(field == 1 && boardx >= matManager.getSzone()[1][7][1].Pos.X && boardx <= matManager.getSzone()[1][7][2].Pos.X) {
 			if(boardy >= matManager.getSzone()[1][7][2].Pos.Y && boardy <= matManager.getSzone()[1][7][0].Pos.Y) {
 				hovered_controler = 1;
 				hovered_location = LOCATION_SZONE;
 				hovered_sequence = 7;
-			} else if(boardy >= matManager.vFieldContiAct[three_columns][0].Y && boardy <= matManager.vFieldContiAct[three_columns][2].Y) {
+			} else if(boardy >= matManager.vFieldContiAct[speed][0].Y && boardy <= matManager.vFieldContiAct[speed][2].Y) {
 				hovered_controler = 0;
 				hovered_location = POSITION_HINT;
 			}
@@ -2555,15 +2558,15 @@ void ClientField::GetHoverField(const irr::core::vector2d<irr::s32>& mouse) {
 			} else if(boardy >= matManager.getGrave()[0][0].Pos.Y && boardy <= matManager.getGrave()[0][2].Pos.Y) {
 				hovered_controler = 0;
 				hovered_location = LOCATION_GRAVE;
-			} else if(!not_separate_pzones && boardy >= matManager.getSzone()[1][6][2].Pos.Y && boardy <= matManager.getSzone()[1][6][0].Pos.Y) {
+			} else if(field == 0 && boardy >= matManager.getSzone()[1][6][2].Pos.Y && boardy <= matManager.getSzone()[1][6][0].Pos.Y) {
 				hovered_controler = 1;
 				hovered_location = LOCATION_SZONE;
 				hovered_sequence = 6;
-			} else if(!not_separate_pzones && boardy >= matManager.getSzone()[0][7][0].Pos.Y && boardy <= matManager.getSzone()[0][7][2].Pos.Y) {
+			} else if(field == 0 && boardy >= matManager.getSzone()[0][7][0].Pos.Y && boardy <= matManager.getSzone()[0][7][2].Pos.Y) {
 				hovered_controler = 0;
 				hovered_location = LOCATION_SZONE;
 				hovered_sequence = 7;
-			} else if(not_separate_pzones && boardy >= matManager.getRemove()[0][0].Pos.Y && boardy <= matManager.getRemove()[0][2].Pos.Y) {
+			} else if(field == 1 && boardy >= matManager.getRemove()[0][0].Pos.Y && boardy <= matManager.getRemove()[0][2].Pos.Y) {
 				hovered_controler = 0;
 				hovered_location = LOCATION_REMOVED;
 			} else if(boardy >= matManager.getSzone()[1][5][2].Pos.Y && boardy <= matManager.getSzone()[1][5][0].Pos.Y) {
@@ -2573,25 +2576,25 @@ void ClientField::GetHoverField(const irr::core::vector2d<irr::s32>& mouse) {
 			} else if(boardy >= matManager.getExtra()[1][2].Pos.Y && boardy <= matManager.getExtra()[1][0].Pos.Y) {
 				hovered_controler = 1;
 				hovered_location = LOCATION_EXTRA;
-			} else if(not_separate_pzones && boardy >= matManager.getSkill()[1][2].Pos.Y && boardy <= matManager.getSkill()[1][0].Pos.Y) {
+			} else if(field == 1 && boardy >= matManager.getSkill()[1][2].Pos.Y && boardy <= matManager.getSkill()[1][0].Pos.Y) {
 				hovered_controler = 1;
 				hovered_location = LOCATION_SKILL;
 			}
-		} else if(!three_columns && not_separate_pzones && boardx >= matManager.getSzone()[0][7][1].Pos.X && boardx <= matManager.getSzone()[0][7][0].Pos.X) {
+		} else if(speed == 0 && field == 1 && boardx >= matManager.getSzone()[0][7][1].Pos.X && boardx <= matManager.getSzone()[0][7][0].Pos.X) {
 			if(boardy >= matManager.getSzone()[0][7][0].Pos.Y && boardy <= matManager.getSzone()[0][7][2].Pos.Y) {
 				hovered_controler = 0;
 				hovered_location = LOCATION_SZONE;
 				hovered_sequence = 7;
 			}
-		} else if(!not_separate_pzones && boardx >= matManager.getRemove()[0][0].Pos.X && boardx <= matManager.getRemove()[0][1].Pos.X) {
+		} else if(field == 0 && boardx >= matManager.getRemove()[0][0].Pos.X && boardx <= matManager.getRemove()[0][1].Pos.X) {
 			if(boardy >= matManager.getRemove()[0][0].Pos.Y && boardy <= matManager.getRemove()[0][2].Pos.Y) {
 				hovered_controler = 0;
 				hovered_location = LOCATION_REMOVED;
-			} else if(!not_separate_pzones && boardy >= matManager.getSkill()[1][2].Pos.Y && boardy <= matManager.getSkill()[1][0].Pos.Y) {
+			} else if(field == 0 && boardy >= matManager.getSkill()[1][2].Pos.Y && boardy <= matManager.getSkill()[1][0].Pos.Y) {
 				hovered_controler = 1;
 				hovered_location = LOCATION_SKILL;
 			}
-		} else if(not_separate_pzones && three_columns && boardx >= matManager.getSkill()[1][1].Pos.X && boardx <= matManager.getSkill()[1][0].Pos.X){
+		} else if(field == 1 && speed == 1 && boardx >= matManager.getSkill()[1][1].Pos.X && boardx <= matManager.getSkill()[1][0].Pos.X){
 			if(boardy >= matManager.getSkill()[1][2].Pos.Y && boardy <= matManager.getSkill()[1][0].Pos.Y) {
 				hovered_controler = 1;
 				hovered_location = LOCATION_SKILL;
@@ -2600,7 +2603,7 @@ void ClientField::GetHoverField(const irr::core::vector2d<irr::s32>& mouse) {
 			int sequence = (boardx - matManager.vFieldMzone[0][0][0].Pos.X) / (matManager.vFieldMzone[0][0][1].Pos.X - matManager.vFieldMzone[0][0][0].Pos.X);
 			if(sequence > 4)
 				sequence = 4;
-			if(three_columns && (sequence == 0 || sequence== 4))
+			if((mainGame->dInfo.duel_params & DUEL_3_COLUMNS_FIELD) && (sequence == 0 || sequence== 4))
 				hovered_location = 0;
 			else if(boardy > matManager.getSzone()[0][0][0].Pos.Y && boardy <= matManager.getSzone()[0][0][2].Pos.Y) {
 				hovered_controler = 0;
@@ -2832,7 +2835,7 @@ static int GetSuitableReturn(uint32_t maxseq, uint32_t size) {
 template<typename T>
 static inline void WriteCard(ProgressiveBuffer& buffer, uint32_t i, uint32_t value) {
 	static constexpr auto off = 8 >> (sizeof(T) / 2);
-	buffer.set<T>(i + off, static_cast<T>(value));
+	buffer.at<T>(i + off) = static_cast<T>(value);
 }
 void ClientField::SetResponseSelectedCards() const {
 	if (!mainGame->dInfo.compat_mode) {
@@ -2848,28 +2851,28 @@ void ClientField::SetResponseSelectedCards() const {
 			ProgressiveBuffer ret;
 			switch(GetSuitableReturn(maxseq, size)) {
 				case 3: {
-					ret.set<int32_t>(0, 3);
+					ret.at<int32_t>(0) = 3;
 					for(auto c : selected_cards)
-						ret.bitToggle(c->select_seq + (sizeof(int32_t) * 8), true);
+						ret.bitSet(c->select_seq + (sizeof(int32_t) * 8));
 					break;
 				}
 				case 2:	{
-					ret.set<int32_t>(0, 2);
-					ret.set<uint32_t>(1, size);
+					ret.at<int32_t>(0) = 2;
+					ret.at<uint32_t>(1) = size;
 					for(uint32_t i = 0; i < size; ++i)
 						WriteCard<uint8_t>(ret, i, selected_cards[i]->select_seq);
 					break;
 				}
 				case 1:	{
-					ret.set<int32_t>(0, 1);
-					ret.set<uint32_t>(1, size);
+					ret.at<int32_t>(0) = 1;
+					ret.at<uint32_t>(1) = size;
 					for(uint32_t i = 0; i < size; ++i)
 						WriteCard<uint16_t>(ret, i, selected_cards[i]->select_seq);
 					break;
 				}
 				case 0:	{
-					ret.set<int32_t>(0, 0);
-					ret.set<uint32_t>(1, size);
+					ret.at<int32_t>(0) = 0;
+					ret.at<uint32_t>(1) = size;
 					for(uint32_t i = 0; i < size; ++i)
 						WriteCard<uint32_t>(ret, i, selected_cards[i]->select_seq);
 					break;
@@ -2890,7 +2893,7 @@ void ClientField::SetResponseSelectedCards() const {
 }
 void ClientField::SetResponseSelectedOption() const {
 	if(mainGame->dInfo.curMsg == MSG_SELECT_OPTION) {
-		DuelClient::SetResponseI(static_cast<uint32_t>(selected_option));
+		DuelClient::SetResponseI(selected_option);
 	} else {
 		int index = 0;
 		while(activatable_cards[index] != command_card || activatable_descs[index].first != select_options[selected_option]) index++;

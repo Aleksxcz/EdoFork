@@ -1,7 +1,6 @@
 #include "joystick_wrapper.h"
 #ifndef YGOPRO_USE_JOYSTICK
 JWrapper::JWrapper(irr::IrrlichtDevice* _device) {
-	(void)_device;
 }
 
 JWrapper::~JWrapper() {
@@ -17,7 +16,7 @@ void JWrapper::ProcessEvents() {
 JWrapper::JWrapper(irr::IrrlichtDevice* _device) {
 	device = _device;
 	if(SDL_InitSubSystem(SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER) < 0) {
-		epro::printf("Couldn't initialize SDL: %s\n", SDL_GetError());
+		fmt::printf("Couldn't initialize SDL: %s\n", SDL_GetError());
 		return;
 	}
 	SDL_LogSetAllPriority(SDL_LOG_PRIORITY_CRITICAL);
@@ -38,7 +37,7 @@ void JWrapper::ProcessEvents() {
 	while(SDL_PollEvent(&event)) {
 		switch(event.type) {
 			case SDL_CONTROLLERDEVICEADDED:
-				epro::printf("Game controller device %d added.\n", (int)event.cdevice.which);
+				fmt::printf("Game controller device %d added.\n", (int)event.cdevice.which);
 				if(!gamecontroller) {
 					gamecontroller = SDL_GameControllerOpen(event.cdevice.which);
 					/*if(gamecontroller) {
